@@ -3,58 +3,343 @@
 <head>
   <title>Event Saver</title>
   <style>
+    /* Existing styles */
     body {
       width: 400px;
-      padding: 16px;
-      font-family: Arial, sans-serif;
+      padding: 10px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     }
-    .event-list {
-      max-height: 500px;
-      overflow-y: auto;
+    
+    .event-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.2s;
     }
-    .event-item {
+
+    .event-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .event-image-container {
+      width: 100%;
+      height: 160px;
+      overflow: hidden;
+    }
+
+    .event-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .event-content {
       padding: 12px;
-      border-bottom: 1px solid #eee;
+    }
+
+    .event-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
+      margin-bottom: 8px;
     }
-    .event-item:hover {
-      background-color: #f5f5f5;
+
+    .event-title {
+      font-weight: 600;
+      font-size: 16px;
+      color: #111827;
+      flex: 1;
+      margin-right: 8px;
     }
-    .delete-btn {
-      color: red;
-      cursor: pointer;
-      padding: 4px 8px;
+
+    .event-details {
+      font-size: 14px;
+      color: #6b7280;
     }
-    .delete-btn:hover {
-      background-color: rgba(255, 0, 0, 0.1);
+
+    .detail-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .detail-icon {
+      margin-right: 8px;
+      flex-shrink: 0;
+    }
+
+    .categories {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 8px;
+    }
+
+    .category {
+      background-color: #f3f4f6;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      color: #4b5563;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #6b7280;
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .empty-state-text {
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .event-count {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 12px;
+    }
+
+    .btn {
+      padding: 4px;
+      border: 1px solid transparent;
       border-radius: 4px;
+      cursor: pointer;
+      background: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #6b7280;
+      transition: all 0.2s;
     }
+
+    .btn:hover {
+      background-color: #f3f4f6;
+      border-color: #e5e7eb;
+    }
+
+    .delete-btn:hover {
+      color: #ef4444;
+      border-color: #fecaca;
+    }
+
+    .download-btn:hover {
+      color: #3b82f6;
+      border-color: #bfdbfe;
+    }
+
+    .event-actions {
+      display: flex;
+      gap: 4px;
+    }
+
     #save-manual {
-      margin-top: 16px;
-      width: 100%;
-      padding: 8px;
-      background-color: #4CAF50;
+      background-color: #3b82f6;
       color: white;
       border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-bottom: 16px;
+      transition: background-color 0.2s;
+    }
+
+    #save-manual:hover {
+      background-color: #2563eb;
+    }
+
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+    }
+
+    .modal-content {
+      position: relative;
+      background-color: #fff;
+      margin: 20px auto;
+      padding: 20px;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .close-modal {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #6b7280;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      color: #374151;
+      margin-bottom: 4px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #d1d5db;
       border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      ring: 2px solid #bfdbfe;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .btn-secondary {
+      background-color: #fff;
+      color: #374151;
+      border: 1px solid #d1d5db;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 14px;
       cursor: pointer;
     }
-    #save-manual:hover {
-      background-color: #45a049;
+
+    .btn-primary {
+      background-color: #3b82f6;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
     }
-    small {
-      color: #666;
-      display: block;
-      margin: 2px 0;
+
+    .btn-primary:hover {
+      background-color: #2563eb;
+    }
+
+    .btn-secondary:hover {
+      background-color: #f3f4f6;
     }
   </style>
 </head>
 <body>
-  <h2>Saved Events</h2>
-  <div class="event-list" id="eventList"></div>
-  <button id="save-manual">Save Current Page</button>
+  <button id="save-manual">Save Current Event</button>
+  <div class="event-count">
+    Saved events: <span id="event-count">0</span>
+  </div>
+  <div id="eventList"></div>
+
+  <!-- Edit Modal -->
+  <div id="eventModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Event</h3>
+        <button id="closeModal" class="close-modal">&times;</button>
+      </div>
+      <form id="eventForm">
+        <div class="form-group">
+          <label class="form-label" for="title">Title</label>
+          <input type="text" id="title" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="description">Description</label>
+          <textarea id="description" class="form-input" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="startDate">Start Date</label>
+          <input type="datetime-local" id="startDate" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="endDate">End Date</label>
+          <input type="datetime-local" id="endDate" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="imageUrl">Image URL</label>
+          <input type="url" id="imageUrl" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="venueName">Venue Name</label>
+          <input type="text" id="venueName" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="address">Address</label>
+          <input type="text" id="address" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="latitude">Latitude</label>
+          <input type="text" id="latitude" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="longitude">Longitude</label>
+          <input type="text" id="longitude" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="minPrice">Minimum Price</label>
+          <input type="number" id="minPrice" class="form-input" min="0" step="0.01">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="maxPrice">Maximum Price</label>
+          <input type="number" id="maxPrice" class="form-input" min="0" step="0.01">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="organizerName">Organizer Name</label>
+          <input type="text" id="organizerName" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="categories">Categories (comma-separated)</label>
+          <input type="text" id="categories" class="form-input">
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="cancelEdit" class="btn-secondary">Cancel</button>
+          <button type="submit" class="btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="popup.js"></script>
 </body>
 </html>

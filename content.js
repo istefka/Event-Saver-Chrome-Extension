@@ -1,11 +1,27 @@
-function generateUniqueId() {
-  return 'evt-' + Math.random().toString(36).substr(2, 9);
+// Content script for extracting event information
+function getMetaContent(name) {
+  const selectors = [
+    `meta[name="${name}"]`,
+    `meta[property="${name}"]`,
+    `meta[property="og:${name}"]`,
+    `meta[name="og:${name}"]`,
+    `meta[property="event:${name}"]`,
+    `meta[name="event:${name}"]`,
+    `meta[property="twitter:${name}"]`,
+    `meta[name="twitter:${name}"]`
+  ];
+
+  for (const selector of selectors) {
+    const meta = document.querySelector(selector);
+    if (meta) {
+      return meta.getAttribute('content');
+    }
+  }
+  return null;
 }
 
-function extractEventInfo() {
-  const now = new Date().toISOString();
-  let eventInfo = {
-    id: generateUniqueId(),
+function extractEventbriteInfo() {
+  const eventInfo = {
     title: '',
     description: '',
     imageUrl: '',
@@ -17,115 +33,121 @@ function extractEventInfo() {
       latitude: '',
       longitude: ''
     },
-    categories: [],
     price: {
       min: 0,
       max: 0
     },
-    maxAttendees: '',
     organizer: {
-      id: 'org-' + Math.random().toString(36).substr(2, 9),
+      id: '',
       name: '',
       imageUrl: ''
     },
-    status: 'approved',
-    createdAt: now,
-    updatedAt: now,
-    source: 'extension',
-    shares: 0
+    categories: [],
+    status: 'pending'
   };
 
-  // Eventbrite
-  if (window.location.hostname.includes('eventbrite')) {
-    eventInfo.title = document.querySelector('.event-title, .eds-event-details__title')?.textContent?.trim();
-    eventInfo.description = document.querySelector('.eds-event-details__description')?.textContent?.trim();
-    const dateElement = document.querySelector('.eds-event-details__data');
-    if (dateElement) {
-      const dateText = dateElement.textContent;
-      // Parse date text to set startDate and endDate
-      try {
-        const dateMatch = dateText.match(/(\d{4}-\d{2}-\d{2})/);
-        if (dateMatch) {
-          eventInfo.startDate = new Date(dateMatch[1]).toISOString();
-          eventInfo.endDate = new Date(dateMatch[1]).toISOString();
-        }
-      } catch (e) {
-        console.error('Error parsing date:', e);
+  // Get location from the DOM - specifically under location-heading
+  const locationSection = document.querySelector('[id="location-heading"]');
+  if (locationSection) {
+    const locationContainer = locationSection.closest('section');
+    if (locationContainer) {
+      // Get venue name
+      const venueNameElement = locationContainer.querySelector('.location-info__address-text');
+      if (venueNameElement) {
+        eventInfo.location.name = venueNameElement.textContent.trim();
+      }
+
+      // Get full address
+      const addressText = locationContainer.querySelector('.location-info__address');
+      if (addressText) {
+        const textNodes = Array.from(addressText.childNodes)
+          .filter(node => node.nodeType === Node.TEXT_NODE)
+          .map(node => node.textContent.trim())
+          .filter(text => text.length > 0);
+        eventInfo.location.address = textNodes.join(', ');
       }
     }
-    eventInfo.location.name = document.querySelector('.eds-venue-details__name')?.textContent?.trim();
-    eventInfo.location.address = document.querySelector('.eds-venue-details__address')?.textContent?.trim();
-    
-    // Extract price if available
-    const priceElement = document.querySelector('.eds-ticket-price');
+  }
+
+  // Get organizer information from the "Organizer profile" section
+  const organizerSection = document.querySelector('.listing-organizer');
+  if (organizerSection) {
+    const organizerNameElement = organizerSection.querySelector('.descriptive-organizer-info-mobile__name-link');
+    if (organizerNameElement) {
+      eventInfo.organizer.name = organizerNameElement.textContent.trim();
+    }
+  }
+
+  // Get meta information
+  eventInfo.title = getMetaContent('og:title') || document.title;
+  eventInfo.description = getMetaContent('og:description') || '';
+  eventInfo.imageUrl = getMetaContent('og:image') || '';
+  eventInfo.startDate = getMetaContent('event:start_time') || '';
+  eventInfo.endDate = getMetaContent('event:end_time') || '';
+  
+  // Get location from meta tags if not found in DOM
+  if (!eventInfo.location.name || !eventInfo.location.address) {
+    const twitterLocation = getMetaContent('twitter:data1');
+    if (twitterLocation) {
+      const [venueName, address] = twitterLocation.split(',');
+      if (!eventInfo.location.name) {
+        eventInfo.location.name = venueName.trim();
+      }
+      if (!eventInfo.location.address) {
+        eventInfo.location.address = address.trim();
+      }
+    }
+  }
+
+  // Get coordinates
+  eventInfo.location.latitude = getMetaContent('event:location:latitude') || '';
+  eventInfo.location.longitude = getMetaContent('event:location:longitude') || '';
+
+  // Get price information from conversion bar
+  const priceContainer = document.querySelector('.conversion-bar-container');
+  if (priceContainer) {
+    const priceElement = priceContainer.querySelector('.conversion-bar__panel-info');
     if (priceElement) {
-      const priceText = priceElement.textContent;
-      const priceMatch = priceText.match(/\d+/);
+      const priceText = priceElement.textContent.trim();
+      const priceMatch = priceText.match(/[\d,.]+/g);
       if (priceMatch) {
-        eventInfo.price.min = parseInt(priceMatch[0]);
-        eventInfo.price.max = parseInt(priceMatch[0]);
+        if (priceMatch.length === 1) {
+          // Single price
+          eventInfo.price.min = parseFloat(priceMatch[0].replace(',', '.'));
+          eventInfo.price.max = eventInfo.price.min;
+        } else if (priceMatch.length === 2) {
+          // Price range
+          eventInfo.price.min = parseFloat(priceMatch[0].replace(',', '.'));
+          eventInfo.price.max = parseFloat(priceMatch[1].replace(',', '.'));
+        }
       }
     }
-  }
-  // Meetup
-  else if (window.location.hostname.includes('meetup')) {
-    eventInfo.title = document.querySelector('h1')?.textContent?.trim();
-    eventInfo.description = document.querySelector('[data-testid="event-description"]')?.textContent?.trim();
-    const dateElement = document.querySelector('time');
-    if (dateElement) {
-      const dateStr = dateElement.getAttribute('datetime');
-      if (dateStr) {
-        eventInfo.startDate = new Date(dateStr).toISOString();
-        eventInfo.endDate = new Date(dateStr).toISOString();
-      }
-    }
-    eventInfo.location.name = document.querySelector('[data-testid="venue-name"]')?.textContent?.trim();
-    eventInfo.location.address = document.querySelector('[data-testid="venue-address"]')?.textContent?.trim();
-  }
-  // Ticketswap
-  else if (window.location.hostname.includes('ticketswap')) {
-    eventInfo.title = document.querySelector('h1')?.textContent?.trim();
-    const dateElement = document.querySelector('.event-info time');
-    if (dateElement) {
-      const dateStr = dateElement.getAttribute('datetime');
-      if (dateStr) {
-        eventInfo.startDate = new Date(dateStr).toISOString();
-        eventInfo.endDate = new Date(dateStr).toISOString();
-      }
-    }
-    eventInfo.location.name = document.querySelector('.event-info .venue-name')?.textContent?.trim();
-    eventInfo.location.address = document.querySelector('.event-info .venue-address')?.textContent?.trim();
-  }
-
-  // Try to find an image
-  const ogImage = document.querySelector('meta[property="og:image"]');
-  if (ogImage) {
-    eventInfo.imageUrl = ogImage.getAttribute('content');
-  }
-
-  // Try to find categories
-  const keywords = document.querySelector('meta[name="keywords"]');
-  if (keywords) {
-    eventInfo.categories = keywords.getAttribute('content').split(',').map(k => k.trim());
   }
 
   return eventInfo;
 }
 
-function saveEvent(eventInfo) {
-  chrome.storage.local.get(['events'], (result) => {
-    const events = result.events || [];
-    events.push(eventInfo);
-    chrome.storage.local.set({ events }, () => {
-      chrome.runtime.sendMessage({ action: 'eventSaved' });
-      alert('Event saved successfully!');
-    });
-  });
-}
-
+// Listen for messages from the popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'saveEvent') {
-    const eventInfo = extractEventInfo();
-    saveEvent(eventInfo);
+    const eventInfo = extractEventbriteInfo();
+    
+    // Save to storage
+    chrome.storage.local.get(['events'], (result) => {
+      const events = result.events || [];
+      events.push({
+        ...eventInfo,
+        createdAt: new Date().toISOString()
+      });
+      
+      chrome.storage.local.set({ events }, () => {
+        // Notify popup that event was saved
+        chrome.runtime.sendMessage({ 
+          action: 'eventSaved',
+          event: eventInfo
+        });
+      });
+    });
   }
+  return true; // Required for async response
 });
