@@ -146,8 +146,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           action: 'eventSaved',
           event: eventInfo
         });
+        // Send response to close the message channel
+        sendResponse({ success: true });
       });
     });
   }
-  return true; // Required for async response
+  // Return true to indicate we'll send a response asynchronously
+  return true;
 });

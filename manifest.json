@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Event Saver",
+  "name": "ThrillDash Events",
   "version": "1.0",
-  "description": "Save events from various websites to a local list",
+  "description": "Save and organize your favorite events from across the web with ThrillDash",
   "permissions": ["activeTab", "storage"],
   "action": {
     "default_popup": "popup.html",

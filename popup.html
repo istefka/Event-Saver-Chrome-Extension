@@ -1,94 +1,120 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Event Saver</title>
+  <title>ThrillDash Events</title>
   <style>
-    /* Existing styles */
+    :root {
+      --primary: #FF385C;
+      --primary-dark: #E61845;
+      --secondary: #00A699;
+      --text: #484848;
+      --text-light: #767676;
+      --bg: #FFFFFF;
+      --bg-light: #F7F7F7;
+      --border: #DDDDDD;
+    }
+
     body {
       width: 400px;
-      padding: 10px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      padding: 16px;
+      font-family: 'Circular', -apple-system, BlinkMacSystemFont, Roboto, Helvetica Neue, sans-serif;
+      color: var(--text);
+      margin: 0;
     }
     
     .event-card {
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      margin-bottom: 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 16px;
       overflow: hidden;
       cursor: pointer;
       transition: all 0.2s;
+      background: var(--bg);
     }
 
     .event-card:hover {
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+      transform: translateY(-1px);
     }
 
     .event-image-container {
       width: 100%;
-      height: 160px;
+      height: 200px;
       overflow: hidden;
+      position: relative;
     }
 
     .event-image {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .event-card:hover .event-image {
+      transform: scale(1.05);
     }
 
     .event-content {
-      padding: 12px;
+      padding: 16px;
     }
 
     .event-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 8px;
+      margin-bottom: 12px;
     }
 
     .event-title {
       font-weight: 600;
-      font-size: 16px;
-      color: #111827;
+      font-size: 18px;
+      color: var(--text);
       flex: 1;
-      margin-right: 8px;
+      margin-right: 12px;
+      line-height: 1.2;
     }
 
     .event-details {
       font-size: 14px;
-      color: #6b7280;
+      color: var(--text-light);
     }
 
     .detail-row {
       display: flex;
       align-items: center;
-      margin-bottom: 4px;
+      margin-bottom: 8px;
     }
 
     .detail-icon {
       margin-right: 8px;
       flex-shrink: 0;
+      color: var(--primary);
     }
 
     .categories {
       display: flex;
       flex-wrap: wrap;
-      gap: 4px;
-      margin-top: 8px;
+      gap: 6px;
+      margin-top: 12px;
     }
 
     .category {
-      background-color: #f3f4f6;
-      padding: 2px 8px;
-      border-radius: 12px;
+      background-color: var(--bg-light);
+      padding: 4px 12px;
+      border-radius: 16px;
       font-size: 12px;
-      color: #4b5563;
+      color: var(--text);
+      font-weight: 500;
     }
 
     .empty-state {
       text-align: center;
-      padding: 40px 20px;
-      color: #6b7280;
+      padding: 48px 24px;
+      color: var(--text-light);
+      background: var(--bg-light);
+      border-radius: 12px;
+      margin: 16px 0;
     }
 
     .empty-state-icon {
@@ -99,64 +125,67 @@
     .empty-state-text {
       font-size: 14px;
       line-height: 1.5;
+      margin-bottom: 8px;
     }
 
     .event-count {
       font-size: 14px;
-      color: #6b7280;
-      margin-bottom: 12px;
+      color: var(--text-light);
+      margin-bottom: 16px;
+      font-weight: 500;
     }
 
     .btn {
-      padding: 4px;
-      border: 1px solid transparent;
-      border-radius: 4px;
+      padding: 6px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
       cursor: pointer;
-      background: none;
+      background: var(--bg);
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #6b7280;
+      color: var(--text-light);
       transition: all 0.2s;
     }
 
     .btn:hover {
-      background-color: #f3f4f6;
-      border-color: #e5e7eb;
+      background-color: var(--bg-light);
+      border-color: var(--text-light);
     }
 
     .delete-btn:hover {
-      color: #ef4444;
-      border-color: #fecaca;
+      color: var(--primary);
+      border-color: var(--primary);
     }
 
     .download-btn:hover {
-      color: #3b82f6;
-      border-color: #bfdbfe;
+      color: var(--secondary);
+      border-color: var(--secondary);
     }
 
     .event-actions {
       display: flex;
-      gap: 4px;
+      gap: 6px;
     }
 
     #save-manual {
-      background-color: #3b82f6;
+      background-color: var(--primary);
       color: white;
       border: none;
-      padding: 8px 16px;
-      border-radius: 6px;
+      padding: 12px 24px;
+      border-radius: 8px;
       cursor: pointer;
-      font-size: 14px;
-      margin-bottom: 16px;
+      font-size: 16px;
+      font-weight: 500;
+      margin-bottom: 20px;
       transition: background-color 0.2s;
+      width: 100%;
     }
 
     #save-manual:hover {
-      background-color: #2563eb;
+      background-color: var(--primary-dark);
     }
 
-    /* Modal styles */
     .modal {
       display: none;
       position: fixed;
@@ -164,16 +193,17 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
+      background-color: rgba(0, 0, 0, 0.6);
       z-index: 1000;
+      backdrop-filter: blur(4px);
     }
 
     .modal-content {
       position: relative;
-      background-color: #fff;
-      margin: 20px auto;
-      padding: 20px;
-      border-radius: 8px;
+      background-color: var(--bg);
+      margin: 24px auto;
+      padding: 24px;
+      border-radius: 16px;
       width: 90%;
       max-width: 500px;
       max-height: 80vh;
@@ -184,13 +214,13 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
+      margin-bottom: 24px;
     }
 
     .modal-title {
-      font-size: 18px;
+      font-size: 24px;
       font-weight: 600;
-      color: #111827;
+      color: var(--text);
     }
 
     .close-modal {
@@ -198,74 +228,105 @@
       border: none;
       font-size: 24px;
       cursor: pointer;
-      color: #6b7280;
+      color: var(--text-light);
+      padding: 4px;
     }
 
     .form-group {
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
 
     .form-label {
       display: block;
       font-size: 14px;
       font-weight: 500;
-      color: #374151;
-      margin-bottom: 4px;
+      color: var(--text);
+      margin-bottom: 6px;
     }
 
     .form-input {
       width: 100%;
-      padding: 8px;
-      border: 1px solid #d1d5db;
-      border-radius: 4px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
       font-size: 14px;
+      transition: all 0.2s;
     }
 
     .form-input:focus {
       outline: none;
-      border-color: #3b82f6;
-      ring: 2px solid #bfdbfe;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(255, 56, 92, 0.1);
     }
 
     .modal-footer {
       display: flex;
       justify-content: flex-end;
-      gap: 8px;
-      margin-top: 20px;
-      padding-top: 16px;
-      border-top: 1px solid #e5e7eb;
+      gap: 12px;
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
     }
 
     .btn-secondary {
-      background-color: #fff;
-      color: #374151;
-      border: 1px solid #d1d5db;
-      padding: 8px 16px;
-      border-radius: 6px;
+      background-color: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 12px 24px;
+      border-radius: 8px;
       font-size: 14px;
+      font-weight: 500;
       cursor: pointer;
+      transition: all 0.2s;
     }
 
     .btn-primary {
-      background-color: #3b82f6;
-      color: #fff;
+      background-color: var(--primary);
+      color: white;
       border: none;
-      padding: 8px 16px;
-      border-radius: 6px;
+      padding: 12px 24px;
+      border-radius: 8px;
       font-size: 14px;
+      font-weight: 500;
       cursor: pointer;
+      transition: all 0.2s;
     }
 
     .btn-primary:hover {
-      background-color: #2563eb;
+      background-color: var(--primary-dark);
     }
 
     .btn-secondary:hover {
-      background-color: #f3f4f6;
+      background-color: var(--bg-light);
+      border-color: var(--text-light);
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .logo {
+      width: 32px;
+      height: 32px;
+    }
+
+    .header-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text);
+      margin: 0;
     }
   </style>
 </head>
 <body>
+  <div class="header">
+    <img src="icons/icon48.png" alt="ThrillDash" class="logo">
+    <h1 class="header-title">ThrillDash Events</h1>
+  </div>
+
   <button id="save-manual">Save Current Event</button>
   <div class="event-count">
     Saved events: <span id="event-count">0</span>
